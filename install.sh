@@ -9,7 +9,12 @@ echo "================================================"
 echo ""
 
 # Navigate to project directory
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || {
+    echo "❌ Error: Failed to change to project directory!"
+    echo "   Script location: $(dirname "$0")"
+    echo "   Please check that the script file is accessible."
+    exit 1
+}
 
 echo "📂 Current directory: $(pwd)"
 echo ""

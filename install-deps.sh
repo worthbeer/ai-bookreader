@@ -2,7 +2,18 @@
 # Quick dependency installation script
 
 echo "Installing missing dependencies..."
-cd /Users/wmbierwerth/WebstormProjects/bookify/bookify
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Change to the project directory (same directory as this script)
+cd "$SCRIPT_DIR" || {
+    echo "Error: Failed to change to project directory: $SCRIPT_DIR"
+    echo "Please ensure this script is in the root of your project."
+    exit 1
+}
+
+echo "Project directory: $SCRIPT_DIR"
 
 # Check if node_modules exists
 if [ ! -d "node_modules" ]; then

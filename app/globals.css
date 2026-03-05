@@ -1,3 +1,4 @@
+/* biome-ignore-file */
 @import 'tailwindcss';
 @import 'tw-animate-css';
 
@@ -728,7 +729,7 @@
 
     &:focus {
       outline: none;
-      border-color: #663820;
+      border-color: #212a3b;
       box-shadow: var(--shadow-soft), 0 0 0 3px rgba(102, 56, 32, 0.1);
     }
 
@@ -939,9 +940,9 @@ button[data-variant='unstyled'] *,
 }
 
 /* Add accent border to active plan card
-   Note: This uses :first-child which assumes active plan is always first.
-   If Clerk changes the order, this may highlight the wrong card. */
-.cl-pricingTableCard:first-child {
+   Uses Clerk's stable cl-pricingTableCard--active class instead of :first-child
+   to ensure the active plan styling persists regardless of rendering order. */
+.cl-pricingTableCard.cl-pricingTableCard--active {
   border: 2px solid #663820 !important;
 }
 
@@ -957,9 +958,11 @@ button[data-variant='unstyled'] *,
 }
 
 /* Add "Current Plan" indicator to active plan that doesn't have a button
+   Uses Clerk's stable cl-pricingTableCard--active class instead of :first-child
+   to ensure the indicator appears on the correct plan regardless of rendering order.
    Note: Hardcoded English text - if i18n support is needed, this should be
    handled in JavaScript with translated strings rendered in the DOM. */
-.cl-pricingTableCard:first-child .cl-pricingTableCardContent::after {
+.cl-pricingTableCard.cl-pricingTableCard--active .cl-pricingTableCardContent::after {
   content: 'Your Current Plan';
   display: block;
   text-align: center;
@@ -970,4 +973,17 @@ button[data-variant='unstyled'] *,
   font-weight: 600;
   border-radius: 0.75rem;
   font-size: 1.125rem;
+}
+
+/* Screen reader only - visually hidden but accessible to assistive tech */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

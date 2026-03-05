@@ -4,7 +4,16 @@ import { Loader2 } from 'lucide-react'
 
 const LoadingOverlay = () => {
   return (
-    <div className="loading-wrapper">
+    <div
+      className="loading-wrapper"
+      role="status"
+      aria-live="polite"
+      aria-busy={true}
+    >
+      {/* Screen reader announcement for accessibility */}
+      <span className="sr-only">
+        Processing your book. Uploading files and parsing content.
+      </span>
       <div className="loading-shadow-wrapper bg-(--bg-card)">
         <div className="loading-shadow">
           <Loader2 className="loading-animation w-12 h-12 text-(--accent-warm)" />

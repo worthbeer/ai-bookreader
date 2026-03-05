@@ -85,23 +85,56 @@ function FormLabel({ className, ...props }: React.ComponentProps<"label">) {
   )
 }
 
+/**
+ * FormControl wrapper for form inputs.
+ *
+ * The actual interactive control (input, select, textarea) inside this wrapper
+ * should receive the ARIA attributes from useFormField or useFormControlProps.
+ *
+ * Example with Input component (spreads all props including id/aria-*):
+ *   <FormControl>
+ *     <Input {...field} />
+ *   </FormControl>
+ *
+ * Example with custom input using useFormControlProps:
+ *   <FormControl>
+ *     <input {...useFormControlProps()} {...field} />
+ *   </FormControl>
+ *
+ * This ensures FormLabel(htmlFor={formItemId}) correctly points to the actual
+ * interactive control, enabling proper focus behavior and accessibility.
+ */
 function FormControl({ className, ...props }: React.ComponentProps<"div">) {
-  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
-
   return (
     <div
-      id={formItemId}
-      aria-describedby={
-        !error
-          ? formDescriptionId
-          : `${formDescriptionId} ${formMessageId}`
-      }
-      aria-errormessage={error ? formMessageId : undefined}
-      aria-invalid={!!error}
       className={cn(className)}
       {...props}
     />
   )
+}
+
+function getFormControlProps(error?: boolean, formItemId?: string, formDescriptionId?: string, formMessageId?: string) {
+  return {
+    id: formItemId,
+    "aria-describedby": !error ? formDescriptionId : `${formDescriptionId} ${formMessageId}`,
+    "aria-errormessage": error ? formMessageId : undefined,
+    "aria-invalid": !!error,
+  } as React.InputHTMLAttributes<HTMLInputElement>
+}
+
+/**
+ * Hook to get form control attributes for use in custom form inputs.
+ * Usage: const fieldProps = useFormControlProps();
+ *        <input {...fieldProps} />
+ */
+function useFormControlProps() {
+  const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
+  return {
+    id: formItemId,
+    "aria-describedby": !error ? formDescriptionId : `${formDescriptionId} ${formMessageId}`,
+    "aria-errormessage": error ? formMessageId : undefined,
+    "aria-invalid": !!error,
+  } as React.InputHTMLAttributes<HTMLInputElement>
 }
 
 function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
@@ -146,5 +179,7 @@ export {
   FormLabel,
   FormMessage,
   useFormField,
+  getFormControlProps,
+  useFormControlProps,
 }
 

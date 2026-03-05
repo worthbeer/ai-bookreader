@@ -75,6 +75,11 @@ const UploadForm = () => {
             const fileTitle = data.title.replace(/\s+/g, '-').toLowerCase();
             const pdfFile = data.pdfFile;
 
+            // Generate unique upload ID to prevent blob key collisions
+            // This ensures each upload has a unique path even if the same title is used
+            const uploadId = crypto.randomUUID();
+            const uniqueFileKey = `${fileTitle}_${uploadId}`;
+
             const parsedPDF = await parsePDFFile(pdfFile);
 
             if(parsedPDF.content.length === 0) {
@@ -82,19 +87,19 @@ const UploadForm = () => {
                 return;
             }
 
-            const uploadedPdfBlob = await upload(fileTitle, pdfFile);
+            const uploadedPdfBlob = await upload(uniqueFileKey, pdfFile);
 
             let coverUrl: string;
 
             if(data.coverImage) {
                 const coverFile = data.coverImage;
-                const uploadedCoverBlob = await upload(`${fileTitle}_cover.png`, coverFile);
+                const uploadedCoverBlob = await upload(`${uniqueFileKey}_cover.png`, coverFile);
                 coverUrl = uploadedCoverBlob.url;
             } else {
                 const response = await fetch(parsedPDF.cover)
                 const blob = await response.blob();
 
-                const uploadedCoverBlob = await upload(`${fileTitle}_cover.png`, blob);
+                const uploadedCoverBlob = await upload(`${uniqueFileKey}_cover.png`, blob);
                 coverUrl = uploadedCoverBlob.url;
             }
 
@@ -124,7 +129,7 @@ const UploadForm = () => {
                 return;
             }
 
-            const segments = await saveBookSegments(book.data._id, userId, parsedPDF.content);
+            const segments = await saveBookSegments(book.data._id, parsedPDF.content);
 
             if(!segments.success) {
                 toast.error("Failed to save book segments");

@@ -1,10 +1,20 @@
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
+import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request): Promise<NextResponse> {
-  const body = (await request.json()) as HandleUploadBody;
-
   try {
+    // Authenticate user before allowing upload
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 },
+      );
+    }
+
+    const body = (await request.json()) as HandleUploadBody;
+
     const jsonResponse = await handleUpload({
       body,
       request,
@@ -31,13 +41,10 @@ export async function POST(request: Request): Promise<NextResponse> {
 
         console.log('blob upload completed', blob, tokenPayload);
 
-        try {
-          // Run any logic after the file upload completed
-          // const { userId } = JSON.parse(tokenPayload);
-          // await db.update({ avatar: blob.url, userId });
-        } catch (error) {
-          throw new Error('Could not update user');
-        }
+        // TODO: Implement post-upload logic here
+        // Example: Parse tokenPayload and update database
+        // const { userId } = JSON.parse(tokenPayload);
+        // await db.update({ avatar: blob.url, userId });
       },
     });
 

@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import { MAX_FILE_SIZE, ACCEPTED_PDF_TYPES, MAX_IMAGE_SIZE, ACCEPTED_IMAGE_TYPES } from './constants';
 
+// Allowed voice IDs from voiceOptions in constants.ts
+const ALLOWED_VOICE_IDS = ['dave', 'daniel', 'chris', 'rachel', 'sarah'] as const;
+
 export const UploadSchema = z.object({
   pdfFile: z
     .instanceof(File, { message: 'PDF file is required' })
@@ -27,8 +30,8 @@ export const UploadSchema = z.object({
     .min(1, 'Author name is required')
     .min(2, 'Author name must be at least 2 characters')
     .max(100, 'Author name must be less than 100 characters'),
-  persona: z
-    .string()
-    .min(1, 'Please select a voice'),
+  persona: z.enum(ALLOWED_VOICE_IDS, {
+    errorMap: () => ({ message: 'Please select a valid voice (dave, daniel, chris, rachel, or sarah)' })
+  }),
 });
 
