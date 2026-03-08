@@ -29,17 +29,28 @@ export default function RootLayout({
                                    }: Readonly<{
     children: React.ReactNode;
 }>) {
-    return (
-        <ClerkProvider>
-            <html lang="en">
-            <body
-                className={`${ibmPlexSerif.variable} ${monaSans.variable} relative font-sans antialiased`}
-            >
-            <Navbar />
+    const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+    const clerkEnabled = Boolean(publishableKey);
+
+    const content = (
+        <>
+            <Navbar authEnabled={clerkEnabled} />
             {children}
             <Toaster position="top-center" richColors />
-            </body>
-            </html>
-        </ClerkProvider>
+        </>
+    );
+
+    return (
+        <html lang="en">
+        <body
+            className={`${ibmPlexSerif.variable} ${monaSans.variable} relative font-sans antialiased`}
+        >
+        {clerkEnabled && publishableKey ? (
+            <ClerkProvider publishableKey={publishableKey}>{content}</ClerkProvider>
+        ) : (
+            content
+        )}
+        </body>
+        </html>
     );
 }

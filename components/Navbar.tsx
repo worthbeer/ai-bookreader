@@ -12,7 +12,11 @@ const navItems=[
     {label: "Add New", href: "/books/new"}
 ]
 
-const Navbar = () => {
+type NavbarProps = {
+    authEnabled?: boolean;
+}
+
+const Navbar = ({ authEnabled = true }: NavbarProps) => {
     const pathName=usePathname();
     const { user } = useUser();
 
@@ -33,21 +37,23 @@ const Navbar = () => {
                           </Link>
                       )
                   })}
-                  <div className="flex gap-7.5 items-center">
-                      <SignedOut>
-                          <SignInButton mode="modal" />
-                      </SignedOut>
-                      <SignedIn>
-                          <div className="nav-user-link">
-                              <UserButton />
-                              {user?.firstName && (
-                                  <Link href="/subscriptions" className="nav-user-name">
-                                      {user.firstName}
-                                  </Link>
-                              )}
-                          </div>
-                      </SignedIn>
-                  </div>
+                  {authEnabled && (
+                      <div className="flex gap-7.5 items-center">
+                          <SignedOut>
+                              <SignInButton mode="modal" />
+                          </SignedOut>
+                          <SignedIn>
+                              <div className="nav-user-link">
+                                  <UserButton />
+                                  {user?.firstName && (
+                                      <Link href="/subscriptions" className="nav-user-name">
+                                          {user.firstName}
+                                      </Link>
+                                  )}
+                              </div>
+                          </SignedIn>
+                      </div>
+                  )}
               </nav>
           </div>
         </header>
