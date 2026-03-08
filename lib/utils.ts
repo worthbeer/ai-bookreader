@@ -1,103 +1,159 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { TextSegment } from '@/types';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { DEFAULT_VOICE, voiceOptions } from './constants';
+
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
-export async function parsePDFFile(file: File): Promise<{ content: Array<{ text: string; segmentIndex: number; pageNumber?: number; wordCount: number }>; cover: string }> {
-  // Validate file type
-  if (!file.type || file.type !== 'application/pdf') {
-    throw new Error(
-      `Invalid file type: ${file.type || 'unknown'}. Only PDF files are supported.`
-    )
+// Serialize Mongoose documents to plain JSON objects (strips ObjectId, Date, etc.)
+export const serializeData = <T>(data: T): T => JSON.parse(JSON.stringify(data));
+
+// Auto generate slug
+export function generateSlug(text: string): string {
+  return text
+      .replace(/\.[^/.]+$/, '') // Remove file extension (.pdf, .txt, etc.)
+      .toLowerCase() // Convert to lowercase
+      .trim() // Remove whitespace from both ends
+      .replace(/[^\w\s-]/g, '') // Remove special characters (keep letters, numbers, spaces, hyphens)
+      .replace(/[\s_]+/g, '-') // Replace spaces and underscores with hyphens
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+}
+
+// Escape regex special characters to prevent ReDoS attacks
+export const escapeRegex = (str: string): string => {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+// Splits text content into segments for MongoDB storage and search
+export const splitIntoSegments = (
+    text: string,
+    segmentSize: number = 500, // Maximum words per segment
+    overlapSize: number = 50, // Words to overlap between segments for context
+): TextSegment[] => {
+  // Validate parameters to prevent infinite loops
+  if (segmentSize <= 0) {
+    throw new Error('segmentSize must be greater than 0');
+  }
+  if (overlapSize < 0 || overlapSize >= segmentSize) {
+    throw new Error('overlapSize must be >= 0 and < segmentSize');
   }
 
-  // Validate file size (max 50MB)
-  const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB in bytes
-  if (file.size > MAX_FILE_SIZE) {
-    throw new Error(
-      `File size ${(file.size / 1024 / 1024).toFixed(2)}MB exceeds maximum allowed size of 50MB.`
-    )
+  const words = text.split(/\s+/).filter((word) => word.length > 0);
+  const segments: TextSegment[] = [];
+
+  let segmentIndex = 0;
+  let startIndex = 0;
+
+  while (startIndex < words.length) {
+    const endIndex = Math.min(startIndex + segmentSize, words.length);
+    const segmentWords = words.slice(startIndex, endIndex);
+    const segmentText = segmentWords.join(' ');
+
+    segments.push({
+      text: segmentText,
+      segmentIndex,
+      wordCount: segmentWords.length,
+    });
+
+    segmentIndex++;
+
+    if (endIndex >= words.length) break;
+    startIndex = endIndex - overlapSize;
   }
 
-  if (file.size === 0) {
-    throw new Error('File is empty. Please select a valid PDF file.')
-  }
+  return segments;
+};
 
-  // Check if running in production
-  const isProduction = process.env.NODE_ENV === 'production'
-  const isDevelopment = process.env.NODE_ENV === 'development'
+// Get voice data by persona key or voice ID
+export const getVoice = (persona?: string) => {
+  if (!persona) return voiceOptions[DEFAULT_VOICE];
 
-  // Check if real PDF parsing is configured (server-side API endpoint)
-  const hasPDFParsingEndpoint = !!process.env.NEXT_PUBLIC_PDF_PARSE_API
+  // Find by voice ID
+  const voiceEntry = Object.values(voiceOptions).find((v) => v.id === persona);
+  if (voiceEntry) return voiceEntry;
 
-  if (isProduction && !hasPDFParsingEndpoint) {
-    throw new Error(
-      'PDF parsing is not configured for production. ' +
-      'Please set up a server-side PDF parsing endpoint and configure NEXT_PUBLIC_PDF_PARSE_API. ' +
-      'Mock parsing is only available in development mode.'
-    )
-  }
+  // Find by key
+  const voiceByKey = voiceOptions[persona as keyof typeof voiceOptions];
+  if (voiceByKey) return voiceByKey;
 
-  // If PDF parsing endpoint is configured, use it
-  if (hasPDFParsingEndpoint) {
-    // TODO: Implement real server-side PDF parsing
-    // Example:
-    // const formData = new FormData();
-    // formData.append('pdf', file);
-    // const response = await fetch(process.env.NEXT_PUBLIC_PDF_PARSE_API, {
-    //   method: 'POST',
-    //   body: formData,
-    // });
-    // if (!response.ok) throw new Error('PDF parsing failed');
-    // return await response.json();
+  // Default fallback
+  return voiceOptions[DEFAULT_VOICE];
+};
 
-    throw new Error(
-      'Server-side PDF parsing endpoint configured but not yet implemented. ' +
-      'Please implement the PDF parsing API at: ' + process.env.NEXT_PUBLIC_PDF_PARSE_API
-    )
-  }
+// Format duration in seconds to MM:SS format
+export const formatDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
 
-  // Development/test mode only - return mock data with clear warnings
-  if (!isDevelopment) {
-    throw new Error(
-      'PDF parsing is only available in development mode. ' +
-      'Cannot parse PDFs in production without proper configuration.'
-    )
-  }
+export async function parsePDFFile(file: File) {
+  try {
+    const pdfjsLib = await import('pdfjs-dist');
 
-  console.warn(
-    '⚠️ WARNING: Using mock PDF parser in development mode. ' +
-    'This will NOT work in production. File details:',
-    {
-      name: file.name,
-      size: `${(file.size / 1024).toFixed(2)}KB`,
-      type: file.type
+    if (typeof window !== 'undefined') {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+          'pdfjs-dist/build/pdf.worker.min.mjs',
+          import.meta.url,
+      ).toString();
     }
-  )
 
-  // Mock data for development only
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        content: [
-          {
-            text: `[MOCK DATA] Sample content from: ${file.name}`,
-            segmentIndex: 0,
-            pageNumber: 1,
-            wordCount: 5
-          },
-          {
-            text: `[MOCK DATA] This is development mode placeholder text. File size: ${(file.size / 1024).toFixed(2)}KB`,
-            segmentIndex: 1,
-            pageNumber: 1,
-            wordCount: 12
-          }
-        ],
-        cover: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
-      })
-    }, 100)
-  })
+    // Read file as array buffer
+    const arrayBuffer = await file.arrayBuffer();
+
+    // Load PDF document
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdfDocument = await loadingTask.promise;
+
+    // Render first page as cover image
+    const firstPage = await pdfDocument.getPage(1);
+    const viewport = firstPage.getViewport({ scale: 2 }); // 2x scale for better quality
+
+    const canvas = document.createElement('canvas');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      throw new Error('Could not get canvas context');
+    }
+
+    await firstPage.render({
+      canvasContext: context,
+      viewport: viewport,
+    }).promise;
+
+    // Convert canvas to data URL
+    const coverDataURL = canvas.toDataURL('image/png');
+
+    // Extract text from all pages
+    let fullText = '';
+
+    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      const pageText = (textContent.items as Array<{ str?: string }>)
+          .map((item) => item.str ?? '')
+          .filter((text) => text.length > 0)
+          .join(' ');
+      fullText += pageText + '\n';
+    }
+
+    // Split text into segments for search
+    const segments = splitIntoSegments(fullText);
+
+    // Clean up PDF document resources
+    await pdfDocument.destroy();
+
+    return {
+      content: segments,
+      cover: coverDataURL,
+    };
+  } catch (error) {
+    console.error('Error parsing PDF:', error);
+    throw new Error(`Failed to parse PDF file: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
-
