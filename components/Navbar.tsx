@@ -12,9 +12,34 @@ const navItems=[
     {label: "Add New", href: "/books/new"}
 ]
 
-const Navbar = () => {
-    const pathName=usePathname();
+type NavbarProps = {
+    authEnabled?: boolean;
+}
+
+function AuthControls() {
     const { user } = useUser();
+
+    return (
+        <div className="flex gap-7.5 items-center">
+            <SignedOut>
+                <SignInButton mode="modal" />
+            </SignedOut>
+            <SignedIn>
+                <div className="nav-user-link">
+                    <UserButton />
+                    {user?.firstName && (
+                        <Link href="/subscriptions" className="nav-user-name">
+                            {user.firstName}
+                        </Link>
+                    )}
+                </div>
+            </SignedIn>
+        </div>
+    );
+}
+
+const Navbar = ({ authEnabled = true }: NavbarProps) => {
+    const pathName=usePathname();
 
     return (
         <header className="w-full fixed z-50 bg-white border-b border-[#F5E6D3] shadow-sm">
@@ -33,21 +58,7 @@ const Navbar = () => {
                           </Link>
                       )
                   })}
-                  <div className="flex gap-7.5 items-center">
-                      <SignedOut>
-                          <SignInButton mode="modal" />
-                      </SignedOut>
-                      <SignedIn>
-                          <div className="nav-user-link">
-                              <UserButton />
-                              {user?.firstName && (
-                                  <Link href="/subscriptions" className="nav-user-name">
-                                      {user.firstName}
-                                  </Link>
-                              )}
-                          </div>
-                      </SignedIn>
-                  </div>
+                  {authEnabled && <AuthControls />}
               </nav>
           </div>
         </header>

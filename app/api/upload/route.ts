@@ -1,59 +1,56 @@
+import { NextResponse } from 'next/server';
 import { handleUpload, type HandleUploadBody } from '@vercel/blob/client';
 import { auth } from '@clerk/nextjs/server';
-import { NextResponse } from 'next/server';
+import { MAX_FILE_SIZE } from '@/lib/constants';
 
 export async function POST(request: Request): Promise<NextResponse> {
+  const blobToken = process.env.bookinator_READ_WRITE_TOKEN;
+
+  if (!blobToken) {
+    return NextResponse.json(
+      { error: 'Missing upload token environment variable (bookinator_READ_WRITE_TOKEN).' },
+      { status: 500 },
+    );
+  }
+
+  let body: HandleUploadBody;
   try {
-    // Authenticate user before allowing upload
-    const { userId } = await auth();
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 },
-      );
-    }
+    body = (await request.json()) as HandleUploadBody;
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
+  }
 
-    const body = (await request.json()) as HandleUploadBody;
-
+  try {
     const jsonResponse = await handleUpload({
+      token: blobToken,
       body,
       request,
-      onBeforeGenerateToken: async (
-        pathname: string,
-        /* clientPayload?: string, */
-      ) => {
-        // Generate a client token for the browser to upload the file
-        // ⚠️ Authenticate and authorize users before generating the token.
-        // Otherwise, you're allowing anonymous uploads.
+      onBeforeGenerateToken: async () => {
+        const { userId } = await auth();
+        if (!userId) {
+          throw new Error('Unauthorized: User not authenticated');
+        }
 
         return {
           allowedContentTypes: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
-          tokenPayload: JSON.stringify({
-            // optional, sent to your server on upload completion
-            // you could pass a user id from auth, or a value from clientPayload
-          }),
+          addRandomSuffix: true,
+          maximumSizeInBytes: MAX_FILE_SIZE,
+          tokenPayload: JSON.stringify({ userId }),
         };
       },
       onUploadCompleted: async ({ blob, tokenPayload }) => {
-        // Get notified of client upload completion
-        // ⚠️ This will not work on `localhost` websites,
-        // Use ngrok or similar to get the full upload flow
-
-        console.log('blob upload completed', blob, tokenPayload);
-
-        // TODO: Implement post-upload logic here
-        // Example: Parse tokenPayload and update database
-        // const { userId } = JSON.parse(tokenPayload);
-        // await db.update({ avatar: blob.url, userId });
+        console.log('File uploaded to Vercel Blob Storage:', blob.url);
+        const payload = tokenPayload ? JSON.parse(tokenPayload) : null;
+        const userId = payload?.userId;
+        void userId;
+        // Todo: PostHog
       },
     });
 
     return NextResponse.json(jsonResponse);
-  } catch (error) {
-    return NextResponse.json(
-      { error: (error as Error).message },
-      { status: 400 }, // The webhook will retry 5 times waiting for a 200
-    );
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'Unknown error';
+    const status = message.includes('Unauthorized') ? 401 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }
-

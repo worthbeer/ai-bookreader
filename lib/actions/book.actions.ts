@@ -1,23 +1,40 @@
 'use server'
 
 import { CreateBook, TextSegment } from '@/types'
-import { auth } from '@clerk/nextjs/server'
 import { Types } from 'mongoose'
+import { connectToDatabase } from '@/database/mongoose'
+import Book from '@/database/models/book.model'
+import BookSegment from '@/database/models/booksegment.model'
+import { generateSlug, serializeData } from '@/lib/utils'
+
+function serializeError(error: unknown) {
+    if (error instanceof Error) {
+        return {
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+        }
+    }
+
+    return {
+        message: String(error),
+    }
+}
 
 // Storage backend configuration detection
 function getStorageClient() {
-  // Check for common database/storage client configurations
-  const hasMongoose = !!process.env.MONGODB_URI
-  const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL
-  const hasPrisma = !!process.env.DATABASE_URL
-  const hasCustomClient = !!process.env.STORAGE_CLIENT_CONFIGURED
+    // Check for common database/storage client configurations
+    const hasMongoose = !!process.env.MONGODB_URI
+    const hasSupabase = !!process.env.NEXT_PUBLIC_SUPABASE_URL
+    const hasPrisma = !!process.env.DATABASE_URL
+    const hasCustomClient = !!process.env.STORAGE_CLIENT_CONFIGURED
 
-  const isConfigured = hasMongoose || hasSupabase || hasPrisma || hasCustomClient
+    const isConfigured = hasMongoose || hasSupabase || hasPrisma || hasCustomClient
 
-  return {
-    isConfigured,
-    type: hasMongoose ? 'mongodb' : hasSupabase ? 'supabase' : hasPrisma ? 'prisma' : 'custom'
-  }
+    return {
+        isConfigured,
+        type: hasMongoose ? 'mongodb' : hasSupabase ? 'supabase' : hasPrisma ? 'prisma' : 'custom'
+    }
 }
 
 /**
@@ -29,96 +46,170 @@ function getStorageClient() {
  * @throws Error if user is not authenticated or does not own the book
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function validateBookOwnership(_bookId: string | Types.ObjectId, _authenticatedUserId: string): Promise<void> {
-  const storage = getStorageClient()
 
-  if (!storage.isConfigured) {
+export const getAllBooks = async () => {
+    try {
+        await connectToDatabase();
+        const books = await Book.find().sort({createdAt:-1}).lean();
+        return {
+            success: true,
+            data: serializeData(books),
+        }
+    } catch (e) {
+        console.error('Error fetching all books:', e);
+        return {
+            success: false,
+            error: serializeError(e),
+        }
+    }
+}
+export async function validateBookOwnership(_bookId: string | Types.ObjectId, _authenticatedUserId: string): Promise<void> {
+    const storage = getStorageClient()
+
+    if (!storage.isConfigured) {
+        throw new Error(
+            'No storage backend configured. ' +
+            'Cannot validate book ownership without a database connection.'
+        )
+    }
+
+    // Placeholder: TODO - Implement real database query to check ownership
+    // This should verify that the book exists and belongs to the authenticated user
+    // Example: const book = await db.book.findById(bookId);
+    //          if (!book || book.clerkId !== authenticatedUserId) throw new Error('Unauthorized');
     throw new Error(
-      'No storage backend configured. ' +
-      'Cannot validate book ownership without a database connection.'
+        `Storage backend (${storage.type}) detected but ownership validation is not yet implemented. ` +
+        'Please implement the real database query to verify book ownership.'
     )
-  }
-
-  // Placeholder: TODO - Implement real database query to check ownership
-  // This should verify that the book exists and belongs to the authenticated user
-  // Example: const book = await db.book.findById(bookId);
-  //          if (!book || book.clerkId !== authenticatedUserId) throw new Error('Unauthorized');
-  throw new Error(
-    `Storage backend (${storage.type}) detected but ownership validation is not yet implemented. ` +
-    'Please implement the real database query to verify book ownership.'
-  )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function checkBookExists(_title: string) {
-  const storage = getStorageClient()
 
-  if (!storage.isConfigured) {
-    throw new Error(
-      'No storage backend configured. ' +
-      'Please set up a database connection (MONGODB_URI, NEXT_PUBLIC_SUPABASE_URL, or DATABASE_URL) ' +
-      'and implement the real checkBookExists function.'
-    )
-  }
-
-  // Placeholder: TODO - Implement real database query
-  // This should query your database for an existing book with the given title
-  throw new Error(
-    `Storage backend (${storage.type}) detected but checkBookExists is not yet implemented. ` +
-    'Please implement the real database query logic.'
-  )
+export const checkBookExists = async (title: string) => {
+    try {
+        await connectToDatabase();
+        const slug = generateSlug(title)
+        const existingBook = await Book.findOne({ slug }).lean()
+        if (existingBook) {
+            return {
+                exists: true,
+                book: serializeData(existingBook),
+            }
+        }
+        return{
+            exists: false,
+        }
+    } catch(e) {
+        console.error('Error checking if book exists:', e);
+        return {
+            success: false,
+            error: serializeError(e),
+        }
+    }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export async function createBook(_bookData: CreateBook) {
-  const storage = getStorageClient()
+export const createBook = async (data: CreateBook) => {
+    try {
+        await connectToDatabase();
 
-  if (!storage.isConfigured) {
-    throw new Error(
-      'No storage backend configured. ' +
-      'Please set up a database connection (MONGODB_URI, NEXT_PUBLIC_SUPABASE_URL, or DATABASE_URL) ' +
-      'and implement the real createBook function.'
-    )
-  }
+        const slug = generateSlug(data.title);
 
-  // Placeholder: TODO - Implement real database write
-  // This should create a new book document in your database
-  throw new Error(
-    `Storage backend (${storage.type}) detected but createBook is not yet implemented. ` +
-    'Please implement the real database write logic.'
-  )
+        const existingBook = await Book.findOne({slug}).lean();
+
+        if(existingBook) {
+            return {
+                success: true,
+                data: serializeData(existingBook),
+                alreadyExists: true,
+            }
+        }
+
+        // Todo: Check subscription limits before creating a book
+        const { getUserPlan } = await import("@/lib/subscription.server");
+        const { PLAN_LIMITS } = await import("@/lib/subscription-constants");
+
+        const { auth } = await import("@clerk/nextjs/server");
+        const { userId } = await auth();
+
+        if (!userId || userId !== data.clerkId) {
+            return { success: false, error: "Unauthorized" };
+        }
+
+        const plan = await getUserPlan();
+        const limits = PLAN_LIMITS[plan];
+
+        const bookCount = await Book.countDocuments({ clerkId: userId });
+
+        if (bookCount >= limits.maxBooks) {
+            return {
+                success: false,
+                error: `You have reached the maximum number of books allowed for your ${plan} plan (${limits.maxBooks}). Please upgrade to add more books.`,
+                isBillingError: true,
+            };
+        }
+
+        const book = await Book.create({...data, clerkId: userId, slug, totalSegments: 0});
+        const { revalidatePath } = await import("next/cache");
+        revalidatePath("/");
+
+        return {
+            success: true,
+            data: serializeData(book),
+        }
+    } catch (e) {
+        console.error('Error creating a book', e);
+
+        return {
+            success: false,
+            error: serializeError(e),
+        }
+    }
 }
 
-export async function saveBookSegments(
-  _bookId: string | Types.ObjectId,
-  _segments: TextSegment[]
-) {
-  // Get authenticated user from server-side auth
-  const { userId } = await auth()
+export const saveBookSegments= async ( bookId:string, clerkId:string, segments:TextSegment[]) => {
+    try{
+        await connectToDatabase();
+        console.log(`Saving ${segments.length} segments for book ${bookId} and user ${clerkId}...`)
 
-  if (!userId) {
-    throw new Error('Unauthorized: User must be authenticated to save book segments.')
-  }
+        if (!Types.ObjectId.isValid(bookId)) {
+            return {
+                success: false,
+                error: { message: 'Invalid book ID.' },
+            }
+        }
 
-  // Validate that the user owns this book before saving segments
-  await validateBookOwnership(_bookId, userId)
+        const book = await Book.findById(bookId).select('clerkId').lean()
 
-  const storage = getStorageClient()
+        if (!book) {
+            return {
+                success: false,
+                error: { message: 'Book not found.' },
+            }
+        }
 
-  if (!storage.isConfigured) {
-    throw new Error(
-      'No storage backend configured. ' +
-      'Please set up a database connection (MONGODB_URI, NEXT_PUBLIC_SUPABASE_URL, or DATABASE_URL) ' +
-      'and implement the real saveBookSegments function.'
-    )
-  }
+        if (book.clerkId !== clerkId) {
+            return {
+                success: false,
+                error: { message: 'Unauthorized: you do not own this book.' },
+            }
+        }
 
-  // Placeholder: TODO - Implement real database write
-  // This should save text segments to your database
-  // Note: Do NOT log raw bookId, userId, or segment content in production
-  throw new Error(
-    `Storage backend (${storage.type}) detected but saveBookSegments is not yet implemented. ` +
-    'Please implement the real database write logic for segments.'
-  )
+        const segmentsToInsert = segments.map(({text, segmentIndex, pageNumber, wordCount}) => ({
+            clerkId, bookId, content: text, segmentIndex, wordCount, pageNumber
+        }))
+        await BookSegment.insertMany(segmentsToInsert)
+        await Book.findByIdAndUpdate(bookId, {totalSegments:segments.length} )
+        console.log(`Successfully saved ${segments.length} segments for book ${bookId}.`)
+
+        return {
+            success: true,
+            data: { segmentsCreated: segments.length}
+        }
+    } catch (e) {
+        console.error('Error saving book segments', e);
+
+        return {
+            success: false,
+            error: serializeError(e),
+        }
+    }
 }
-
