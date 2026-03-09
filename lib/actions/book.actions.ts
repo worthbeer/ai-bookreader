@@ -7,6 +7,20 @@ import Book from '@/database/models/book.model'
 import BookSegment from '@/database/models/booksegment.model'
 import { generateSlug, serializeData } from '@/lib/utils'
 
+function serializeError(error: unknown) {
+    if (error instanceof Error) {
+        return {
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+        }
+    }
+
+    return {
+        message: String(error),
+    }
+}
+
 // Storage backend configuration detection
 function getStorageClient() {
     // Check for common database/storage client configurations
@@ -45,7 +59,7 @@ export const getAllBooks = async () => {
         console.error('Error fetching all books:', e);
         return {
             success: false,
-            error: e,
+            error: serializeError(e),
         }
     }
 }
@@ -88,7 +102,7 @@ export const checkBookExists = async (title: string) => {
         console.error('Error checking if book exists:', e);
         return {
             success: false,
-            error: e,
+            error: serializeError(e),
         }
     }
 }
@@ -126,9 +140,6 @@ export const createBook = async (data: CreateBook) => {
         const bookCount = await Book.countDocuments({ clerkId: userId });
 
         if (bookCount >= limits.maxBooks) {
-            const { revalidatePath } = await import("next/cache");
-            revalidatePath("/");
-
             return {
                 success: false,
                 error: `You have reached the maximum number of books allowed for your ${plan} plan (${limits.maxBooks}). Please upgrade to add more books.`,
@@ -137,6 +148,8 @@ export const createBook = async (data: CreateBook) => {
         }
 
         const book = await Book.create({...data, clerkId: userId, slug, totalSegments: 0});
+        const { revalidatePath } = await import("next/cache");
+        revalidatePath("/");
 
         return {
             success: true,
@@ -147,7 +160,7 @@ export const createBook = async (data: CreateBook) => {
 
         return {
             success: false,
-            error: e,
+            error: serializeError(e),
         }
     }
 }
@@ -156,6 +169,29 @@ export const saveBookSegments= async ( bookId:string, clerkId:string, segments:T
     try{
         await connectToDatabase();
         console.log(`Saving ${segments.length} segments for book ${bookId} and user ${clerkId}...`)
+
+        if (!Types.ObjectId.isValid(bookId)) {
+            return {
+                success: false,
+                error: { message: 'Invalid book ID.' },
+            }
+        }
+
+        const book = await Book.findById(bookId).select('clerkId').lean()
+
+        if (!book) {
+            return {
+                success: false,
+                error: { message: 'Book not found.' },
+            }
+        }
+
+        if (book.clerkId !== clerkId) {
+            return {
+                success: false,
+                error: { message: 'Unauthorized: you do not own this book.' },
+            }
+        }
 
         const segmentsToInsert = segments.map(({text, segmentIndex, pageNumber, wordCount}) => ({
             clerkId, bookId, content: text, segmentIndex, wordCount, pageNumber
@@ -173,7 +209,7 @@ export const saveBookSegments= async ( bookId:string, clerkId:string, segments:T
 
         return {
             success: false,
-            error: e,
+            error: serializeError(e),
         }
     }
 }

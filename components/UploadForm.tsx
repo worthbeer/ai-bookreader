@@ -22,6 +22,20 @@ import {upload} from "@vercel/blob/client";
 
 type UploadFormValues = z.input<typeof UploadSchema>;
 
+// Helper to safely extract error message from various error types
+const getErrorMessage = (error: unknown, fallback: string = "An error occurred"): string => {
+    if (typeof error === 'string') return error;
+    if (error instanceof Error) return error.message;
+    if (error && typeof error === 'object' && 'message' in error) {
+        return String(error.message);
+    }
+    try {
+        return JSON.stringify(error);
+    } catch {
+        return fallback;
+    }
+};
+
 const UploadForm = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
@@ -62,7 +76,21 @@ const UploadForm = () => {
                 return;
             }
 
-            const fileTitle = data.title.replace(/\s+/g, '-').toLowerCase();
+            // Sanitize title to create a safe slug
+            const fileSlug = data.title
+                .toLowerCase()
+                .normalize('NFD') // Decompose accented characters
+                .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
+                .replace(/[^a-z0-9\s-]/g, '') // Keep only letters, numbers, spaces, and hyphens
+                .replace(/\s+/g, '-') // Replace spaces with hyphens
+                .replace(/-+/g, '-') // Collapse multiple hyphens
+                .replace(/^-|-$/g, '') // Trim leading/trailing hyphens
+                .slice(0, 50); // Limit length
+
+            // Create unique key with timestamp to prevent collisions
+            const timestamp = Date.now();
+            const uniqueFileKey = `${fileSlug}-${timestamp}`;
+
             const pdfFile = data.pdfFile;
 
             const parsedPDF = await parsePDFFile(pdfFile);
@@ -72,7 +100,12 @@ const UploadForm = () => {
                 return;
             }
 
-            const uploadedPdfBlob = await upload(fileTitle, pdfFile, {
+            // Ensure filename has .pdf extension (avoid double-appending)
+            const pdfFilename = uniqueFileKey.toLowerCase().endsWith('.pdf')
+                ? uniqueFileKey
+                : `${uniqueFileKey}.pdf`;
+
+            const uploadedPdfBlob = await upload(pdfFilename, pdfFile, {
                 access: 'public',
                 handleUploadUrl: '/api/upload',
                 contentType: 'application/pdf'
@@ -82,7 +115,7 @@ const UploadForm = () => {
 
             if(data.coverImage) {
                 const coverFile = data.coverImage;
-                const uploadedCoverBlob = await upload(`${fileTitle}_cover.png`, coverFile, {
+                const uploadedCoverBlob = await upload(`${uniqueFileKey}_cover.png`, coverFile, {
                     access: 'public',
                     handleUploadUrl: '/api/upload',
                     contentType: coverFile.type
@@ -92,7 +125,7 @@ const UploadForm = () => {
                 const response = await fetch(parsedPDF.cover)
                 const blob = await response.blob();
 
-                const uploadedCoverBlob = await upload(`${fileTitle}_cover.png`, blob, {
+                const uploadedCoverBlob = await upload(`${uniqueFileKey}_cover.png`, blob, {
                     access: 'public',
                     handleUploadUrl: '/api/upload',
                     contentType: 'image/png'
@@ -112,7 +145,8 @@ const UploadForm = () => {
             });
 
             if(!book.success) {
-                toast.error(book.error as string || "Failed to create book");
+                const errorMessage = getErrorMessage(book.error, "Failed to create book");
+                toast.error(errorMessage);
                 if (book.isBillingError) {
                     router.push("/subscriptions");
                 }
@@ -138,7 +172,7 @@ const UploadForm = () => {
         } catch (error) {
             console.error(error);
 
-            const errorMessage = error instanceof Error ? error.message : "Failed to upload book. Please try again later.";
+            const errorMessage = getErrorMessage(error, "Failed to upload book. Please try again later.");
             toast.error(errorMessage);
         } finally {
             setIsSubmitting(false);

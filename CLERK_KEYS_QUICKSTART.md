@@ -11,9 +11,7 @@
 
 ## Step 2: Copy Keys to .env.local
 
-The `.env.local` file is now **OPEN** in your editor.
-
-Replace the placeholder values on lines 15-16:
+Open the `.env.local` file in your editor and replace the placeholder values:
 
 ```bash
 # BEFORE:
