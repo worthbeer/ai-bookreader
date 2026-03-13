@@ -4,10 +4,16 @@
 cat > /tmp/test-mongo.js << 'EOF'
 const mongoose = require('mongoose');
 
-const MONGODB_URI = process.env.MONGODB_URI || '<REDACTED_ATLAS_URI>';
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  console.error('❌ Error: MONGODB_URI environment variable is not set.');
+  console.error('   Set it before running this script:');
+  console.error('   export MONGODB_URI="mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?appName=<App>"');
+  process.exit(1);
+}
 
 console.log('🧪 Testing MongoDB Connection...');
-console.log('Using URI:', MONGODB_URI.replace(/:[^:]*@/, ':****@'));
+console.log('Using URI:', MONGODB_URI.replace(/:[^:@]*@/, ':****@'));
 console.log('');
 
 const testConnection = async () => {
@@ -35,8 +41,8 @@ const testConnection = async () => {
     console.error('Error:', error.message);
 
     if (error.message.includes('ECONNREFUSED')) {
-      console.error('\n💡 Fix: Add your IP to MongoDB Atlas Network Access whitelist');
-      console.error('   IP Address: <REDACTED_IP>');
+      console.error('\n💡 Fix: Add your current IP to MongoDB Atlas Network Access whitelist');
+      console.error('   Run: curl https://api.ipify.org to find your IP');
       console.error('   1. Go to https://cloud.mongodb.com');
       console.error('   2. Network Access → Add IP Address → Allow Access From Anywhere');
     } else if (error.message.includes('authentication failed')) {
