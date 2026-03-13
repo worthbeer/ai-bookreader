@@ -87,7 +87,7 @@ When deploying to Vercel:
 
 ## Key Points
 
-✅ DNS works (cluster0.hljmdgt.mongodb.net resolves)
+✅ DNS works (<your-cluster>.mongodb.net resolves)
 ✅ MongoDB Atlas is running (status shows all systems operational)
 ✅ Your credentials are correct
 ❌ Your IP (<REDACTED_IP>) is not whitelisted = connection blocked

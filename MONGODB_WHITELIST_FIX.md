@@ -121,7 +121,7 @@ For Vercel deployment, set `MONGODB_URI` in Vercel environment variables:
 1. Go to https://vercel.com/dashboard
 2. Select your project
 3. Settings → Environment Variables
-4. Add: `MONGODB_URI=mongodb+srv://aibookstore_db_user:PASSWORD@cluster0.hljmdgt.mongodb.net/?appName=Cluster0`
+4. Add: `MONGODB_URI=<your_connection_string>` (get this from MongoDB Atlas → Connect → Drivers)
 5. Redeploy your app
 
 ---

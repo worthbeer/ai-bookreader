@@ -1,6 +1,6 @@
 # MongoDB Connection Troubleshooting Guide
 
-## Error: `querySrv ECONNREFUSED _mongodb._tcp.cluster0.hljmdgt.mongodb.net`
+## Error: `querySrv ECONNREFUSED _mongodb._tcp.<your-cluster>.mongodb.net`
 
 This error indicates that your application cannot reach the MongoDB Atlas servers. Here are the solutions:
 
@@ -12,10 +12,10 @@ First, verify your internet connection is working:
 
 ```bash
 # Test DNS resolution
-nslookup cluster0.hljmdgt.mongodb.net
+nslookup <your-cluster>.mongodb.net
 
 # Or use ping
-ping cluster0.hljmdgt.mongodb.net
+ping <your-cluster>.mongodb.net
 
 # Test general internet connectivity
 curl https://www.google.com
@@ -63,13 +63,13 @@ This is the most common cause of connection failures.
 Check that your connection string has the correct username and password:
 
 ```
-mongodb+srv://USERNAME:PASSWORD@cluster0.hljmdgt.mongodb.net/?appName=Cluster0
+mongodb+srv://USERNAME:PASSWORD@<your-cluster>.mongodb.net/?appName=Cluster0
 ```
 
 ### To Reset Password:
 1. Go to MongoDB Atlas Dashboard
 2. Click **Database Access** in the left sidebar
-3. Find your database user (e.g., `aibookstore_db_user`)
+3. Find your database user (e.g., `<db_username>`)
 4. Click the **Edit** button (pencil icon)
 5. Click **Edit Password** to reset it
 6. Update the password in your `.env.local` file
@@ -81,7 +81,7 @@ mongodb+srv://USERNAME:PASSWORD@cluster0.hljmdgt.mongodb.net/?appName=Cluster0
 Your connection string should be:
 
 ```
-mongodb+srv://aibookstore_db_user:PASSWORD@cluster0.hljmdgt.mongodb.net/?appName=Cluster0
+mongodb+srv://<db_username>:PASSWORD@<your-cluster>.mongodb.net/?appName=Cluster0
 ```
 
 **Important Notes:**
@@ -154,10 +154,10 @@ MongoDB Atlas uses port **27017** (or **27015-27017**).
 
 ```bash
 # macOS/Linux
-telnet cluster0.hljmdgt.mongodb.net 27017
+telnet <your-cluster>.mongodb.net 27017
 
 # Or use nc (netcat)
-nc -zv cluster0.hljmdgt.mongodb.net 27017
+nc -zv <your-cluster>.mongodb.net 27017
 ```
 
 If this fails, your ISP or firewall is blocking the connection. Try:
@@ -224,6 +224,6 @@ Then switch to MongoDB Atlas when deploying to Vercel/production:
 
 ```bash
 # Production (set in Vercel dashboard)
-MONGODB_URI=mongodb+srv://aibookstore_db_user:PASSWORD@cluster0.hljmdgt.mongodb.net/?appName=Cluster0
+MONGODB_URI=mongodb+srv://<db_username>:PASSWORD@<your-cluster>.mongodb.net/?appName=Cluster0
 ```
 

@@ -2,7 +2,7 @@
 
 ## Error
 ```
-querySrv ECONNREFUSED _mongodb._tcp.cluster0.hljmdgt.mongodb.net
+querySrv ECONNREFUSED _mongodb._tcp.<your-cluster>.mongodb.net
 ```
 
 ## Solution 1: Whitelist Your IP (Fast)

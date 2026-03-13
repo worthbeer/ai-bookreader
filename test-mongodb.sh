@@ -21,7 +21,7 @@ fi
 # Test MongoDB Atlas connectivity
 echo ""
 echo "🌐 Testing MongoDB Atlas connectivity..."
-CLUSTER="cluster0.hljmdgt.mongodb.net"
+CLUSTER="<your-cluster>.mongodb.net"
 
 # DNS test
 if nslookup $CLUSTER &>/dev/null; then
@@ -37,7 +37,7 @@ fi
 
 echo ""
 echo "🔗 Connection String:"
-echo "   mongodb+srv://aibookstore_db_user:PASSWORD@cluster0.hljmdgt.mongodb.net/?appName=Cluster0"
+echo "   mongodb+srv://<db_username>:PASSWORD@<your-cluster>.mongodb.net/?appName=Cluster0"
 
 echo ""
 echo "📝 To fix the issue:"
