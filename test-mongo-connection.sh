@@ -4,7 +4,7 @@
 cat > /tmp/test-mongo.js << 'EOF'
 const mongoose = require('mongoose');
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://aibookstore_db_user:NojuSibwnmcTNMLF@cluster0.hljmdgt.mongodb.net/?appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI || '<REDACTED_ATLAS_URI>';
 
 console.log('🧪 Testing MongoDB Connection...');
 console.log('Using URI:', MONGODB_URI.replace(/:[^:]*@/, ':****@'));
@@ -36,7 +36,7 @@ const testConnection = async () => {
 
     if (error.message.includes('ECONNREFUSED')) {
       console.error('\n💡 Fix: Add your IP to MongoDB Atlas Network Access whitelist');
-      console.error('   IP Address: 172.56.164.242');
+      console.error('   IP Address: <REDACTED_IP>');
       console.error('   1. Go to https://cloud.mongodb.com');
       console.error('   2. Network Access → Add IP Address → Allow Access From Anywhere');
     } else if (error.message.includes('authentication failed')) {

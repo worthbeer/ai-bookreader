@@ -7,7 +7,7 @@ One common reason is that you're trying to access the database from an IP
 that isn't whitelisted.
 ```
 
-**Your Current IP: `172.56.164.242`**
+**Your Current IP: `<REDACTED_IP>`**
 
 ---
 
@@ -63,7 +63,7 @@ ps aux | grep mongod
 **Edit `.env.local`:**
 ```dotenv
 # Change from:
-# MONGODB_URI=mongodb+srv://aibookstore_db_user:NojuSibwnmcTNMLF@cluster0.hljmdgt.mongodb.net/?appName=Cluster0
+# MONGODB_URI=<REDACTED_ATLAS_URI>
 
 # To:
 MONGODB_URI=mongodb://127.0.0.1:27017/ai-bookreader
@@ -106,7 +106,7 @@ curl https://api.ipify.org
 
 ## 📋 Troubleshooting Checklist
 
-- [ ] You've added IP `172.56.164.242` to MongoDB Atlas whitelist
+- [ ] You've added IP `<REDACTED_IP>` to MongoDB Atlas whitelist
 - [ ] You've clicked "Confirm" on the whitelist change
 - [ ] You waited 1-2 minutes for the change to propagate
 - [ ] You tested the connection with: `npx ts-node test-mongodb.ts`

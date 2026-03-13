@@ -21,7 +21,7 @@ case $choice in
     echo "Switching to MongoDB Atlas..."
 
     # Update .env.local
-    sed -i.bak 's|^MONGODB_URI=mongodb://.*|MONGODB_URI=mongodb+srv://aibookstore_db_user:NojuSibwnmcTNMLF@cluster0.hljmdgt.mongodb.net/?appName=Cluster0|' .env.local
+    sed -i.bak 's|^MONGODB_URI=mongodb://.*|MONGODB_URI=<REDACTED_ATLAS_URI>|' .env.local
 
     echo "✅ Updated .env.local to use MongoDB Atlas"
     echo ""

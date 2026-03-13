@@ -31,7 +31,7 @@
 
 **Problem:** Cannot connect to MongoDB Atlas
 - Error: `querySrv ECONNREFUSED`
-- Root Cause: IP `172.56.164.242` is not whitelisted
+- Root Cause: IP `<REDACTED_IP>` is not whitelisted
 - Status: DNS works, internet works, cluster is active
 
 **Solution:** Two easy options:
@@ -92,7 +92,7 @@ brew tap mongodb/brew && brew install mongodb-community
 brew services start mongodb-community
 
 # 3. Update .env.local:
-# Change: MONGODB_URI=mongodb+srv://aibookstore_db_user:NojuSibwnmcTNMLF@cluster0.hljmdgt.mongodb.net/?appName=Cluster0
+# Change: MONGODB_URI=<REDACTED_ATLAS_URI>
 # To:     MONGODB_URI=mongodb://127.0.0.1:27017/ai-bookreader
 
 # 4. Test:
