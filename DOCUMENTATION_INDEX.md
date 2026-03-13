@@ -140,7 +140,7 @@ cat MONGODB_COMPLETE_SOLUTION.md         # Full solution
 
 ### Your Current Situation
 - IP: `<REDACTED_IP>`
-- Atlas Cluster: `cluster0.hljmdgt.mongodb.net`
+- Atlas Cluster: `<your-cluster>.mongodb.net`
 - Problem: IP not whitelisted
 - Solution: Option A or B above
 
