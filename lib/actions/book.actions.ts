@@ -47,6 +47,30 @@ function getStorageClient() {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
+/**
+ * Fetch a single book by its MongoDB ObjectId string.
+ * Returns the full book record (including clerkId) so callers can verify ownership.
+ */
+export const getBookById = async (bookId: string) => {
+    try {
+        await connectToDatabase();
+
+        if (!Types.ObjectId.isValid(bookId)) {
+            return { success: false, error: { message: 'Invalid book ID.' } };
+        }
+
+        const book = await Book.findById(bookId).lean();
+        if (!book) {
+            return { success: false, error: { message: 'Book not found.' } };
+        }
+
+        return { success: true, data: serializeData(book) };
+    } catch (e) {
+        console.error('Error fetching book by id:', e);
+        return { success: false, error: serializeError(e) };
+    }
+};
+
 export const getAllBooks = async () => {
     try {
         await connectToDatabase();
@@ -63,6 +87,32 @@ export const getAllBooks = async () => {
         }
     }
 }
+
+export const getBookBySlug = async (slug: string) => {
+    try {
+        await connectToDatabase();
+        const book = await Book.findOne({ slug }).lean();
+
+        if (!book) {
+            return {
+                success: false,
+                error: { message: 'Book not found.' },
+            };
+        }
+
+        return {
+            success: true,
+            data: serializeData(book),
+        };
+    } catch (e) {
+        console.error('Error fetching book by slug:', e);
+        return {
+            success: false,
+            error: serializeError(e),
+        };
+    }
+}
+
 export async function validateBookOwnership(_bookId: string | Types.ObjectId, _authenticatedUserId: string): Promise<void> {
     const storage = getStorageClient()
 
@@ -213,3 +263,57 @@ export const saveBookSegments= async ( bookId:string, clerkId:string, segments:T
         }
     }
 }
+
+export const searchBookSegments = async (
+  bookId: string,
+  query: string,
+  numberOfSegments = 3,
+) => {
+  try {
+    await connectToDatabase();
+
+    if (!Types.ObjectId.isValid(bookId)) {
+      return {
+        success: false,
+        error: { message: 'Invalid book ID.' },
+      };
+    }
+
+    const cleanQuery = query.trim();
+    if (!cleanQuery) {
+      return {
+        success: true,
+        data: [],
+      };
+    }
+
+    const limit = Math.max(1, Math.min(numberOfSegments, 10));
+
+    const segments = await BookSegment.find(
+      {
+        bookId,
+        $text: { $search: cleanQuery },
+      },
+      {
+        content: 1,
+        segmentIndex: 1,
+        pageNumber: 1,
+        score: { $meta: 'textScore' },
+      },
+    )
+      .sort({ score: { $meta: 'textScore' } })
+      .limit(limit)
+      .lean();
+
+    return {
+      success: true,
+      data: serializeData(segments),
+    };
+  } catch (e) {
+    console.error('Error searching book segments:', e);
+    return {
+      success: false,
+      error: serializeError(e),
+    };
+  }
+};

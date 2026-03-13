@@ -4,7 +4,7 @@
 
 Your current Clerk publishable key is only **59 characters** long:
 ```
-pk_test_Y2FyZWZ1bC1saWdlci0xLmNsZXJrLmFjY291bnRzLmRldiQ
+<REDACTED_CLERK_PUBLISHABLE_KEY>
 ```
 
 A valid Clerk publishable key should be **150-300+ characters** long.
@@ -38,7 +38,7 @@ You should see two keys:
 code .env.local  # or use your editor
 
 # Replace this line:
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_Y2FyZWZ1bC1saWdlci0xLmNsZXJrLmFjY291bnRzLmRldiQ
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<REDACTED_CLERK_PUBLISHABLE_KEY>
 
 # With the FULL key you just copied (it should be much longer)
 ```

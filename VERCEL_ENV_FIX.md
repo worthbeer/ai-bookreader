@@ -4,7 +4,7 @@
 Your Vercel build is failing with:
 ```
 Error: @clerk/clerk-react: The publishableKey passed to Clerk is invalid.
-(key=NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_Y2FyZWZ1bC1saWdlci0xLmNsZXJrLmFjY291bnRzLmRldiQ
+(key=NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<REDACTED_CLERK_PUBLISHABLE_KEY>
 ```
 
 **Root Cause:** The environment variable name (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=`) is being included as part of the value in Vercel.
@@ -19,15 +19,15 @@ Go to your Vercel project → Settings → Environment Variables and **re-enter 
 
 | Variable Name | Value (paste ONLY this part) |
 |--------------|------------------------------|
-| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `pk_test_Y2FyZWZ1bC1saWdlci0xLmNsZXJrLmFjY291bnRzLmRldiQ` |
-| `CLERK_SECRET_KEY` | `sk_test_PIpjgbjHuN7vh3zNH5VSqgaijTGgjG49yrsWpYvsAu` |
-| `MONGODB_URI` | `mongodb+srv://aibookstore_db_user:NojuSibwnmcTNMLF@cluster0.hljmdgt.mongodb.net/?appName=Cluster0` |
-| `BLOB_READ_WRITE_TOKEN` | `vercel_blob_rw_YI2TN6WKW5L2e6Fd_gZuOWlGw6nvxKDaeTg76eF7l2vgk5O` |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | `<REDACTED_CLERK_PUBLISHABLE_KEY>` |
+| `CLERK_SECRET_KEY` | `<REDACTED_CLERK_SECRET_KEY>` |
+| `MONGODB_URI` | `<REDACTED_ATLAS_URI>` |
+| `BLOB_READ_WRITE_TOKEN` | `<REDACTED_BLOB_TOKEN>` |
 
 ### ❌ Wrong (what you probably have now)
 If the value field contains something like:
 ```
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_Y2FyZWZ1bC1saWdlci0xLmNsZXJrLmFjY291bnRzLmRldiQ
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=<REDACTED_CLERK_PUBLISHABLE_KEY>
 ```
 
 You pasted the entire `.env` line. **Delete it and paste only the value after the `=` sign.**

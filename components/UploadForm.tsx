@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Upload, ImageIcon } from 'lucide-react';
@@ -38,13 +38,8 @@ const getErrorMessage = (error: unknown, fallback: string = "An error occurred")
 
 const UploadForm = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isMounted, setIsMounted] = useState(false);
     const { userId } = useAuth();
     const router = useRouter()
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
 
     const form = useForm<UploadFormValues>({
         resolver: zodResolver(UploadSchema),
@@ -179,7 +174,6 @@ const UploadForm = () => {
         }
     };
 
-    if (!isMounted) return null;
 
     return (
         <>

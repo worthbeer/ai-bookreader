@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Image from 'next/image'
 import { Trash2, type LucideIcon } from 'lucide-react'
 import { Control, FieldPath, FieldValues } from 'react-hook-form'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
@@ -67,7 +68,7 @@ const FileUploader = <
       name={name}
       render={({ field }) => (
         <FormItem>
-          <FormLabel>{label}</FormLabel>
+          <FormLabel className="form-label">{label}</FormLabel>
           <FormControl>
             <div
               onDrop={(event) => {
@@ -85,9 +86,11 @@ const FileUploader = <
                 <div className="flex w-full items-center justify-between px-4">
                   <div className="flex items-center gap-3">
                     {preview ? (
-                      <img
+                      <Image
                         src={preview}
                         alt="Preview"
+                        width={56}
+                        height={80}
                         className="h-20 w-14 rounded object-cover"
                       />
                     ) : (
