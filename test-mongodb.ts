@@ -1,9 +1,15 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || '<REDACTED_ATLAS_URI>';
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  console.error('❌ Error: MONGODB_URI environment variable is not set.');
+  console.error('   Set it before running this script:');
+  console.error('   export MONGODB_URI="mongodb+srv://<user>:<password>@<cluster>.mongodb.net/?appName=<App>"');
+  process.exit(1);
+}
 
 console.log('🧪 Testing MongoDB Connection...');
-console.log('URI:', MONGODB_URI.replace(/:[^:]*@/, ':****@'));
+console.log('URI:', MONGODB_URI.replace(/:[^:@]*@/, ':****@'));
 
 const testConnection = async () => {
   try {
@@ -25,8 +31,8 @@ const testConnection = async () => {
 
     const message = (error as Error).message;
     if (message.includes('ECONNREFUSED') || message.includes('querySrv')) {
-      console.error('\n💡 Solution: Add your IP to MongoDB Atlas');
-      console.error('   Your IP: <REDACTED_IP>');
+      console.error('\n💡 Solution: Add your current IP to MongoDB Atlas');
+      console.error('   Run: curl https://api.ipify.org  to find your IP');
       console.error('   1. Go to https://cloud.mongodb.com/v2');
       console.error('   2. Network Access → Add IP Address');
       console.error('   3. Select "ALLOW ACCESS FROM ANYWHERE" for development');
