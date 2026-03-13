@@ -1,6 +1,7 @@
+import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 
-import { searchBookSegments } from '@/lib/actions/book.actions';
+import { searchBookSegments, getBookById } from '@/lib/actions/book.actions';
 
 // Helper function to process book search logic
 async function processBookSearch(bookId: unknown, query: unknown) {
@@ -33,6 +34,57 @@ async function processBookSearch(bookId: unknown, query: unknown) {
   return { result: combinedText };
 }
 
+/**
+ * Verify that the currently authenticated Clerk user owns the requested book.
+ * Returns { authorized: true } on success, or { authorized: false, response } with
+ * a ready-to-return NextResponse on failure (401 / 403 / 404).
+ */
+async function authorizeBookAccess(bookId: unknown): Promise<
+  { authorized: true } | { authorized: false; response: NextResponse }
+> {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return {
+      authorized: false,
+      response: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+    };
+  }
+
+  if (bookId == null || bookId === '') {
+    return {
+      authorized: false,
+      response: NextResponse.json({ error: 'Missing bookId' }, { status: 400 }),
+    };
+  }
+
+  const bookIdStr = String(bookId);
+  if (bookIdStr === 'null' || bookIdStr === 'undefined') {
+    return {
+      authorized: false,
+      response: NextResponse.json({ error: 'Invalid bookId' }, { status: 400 }),
+    };
+  }
+
+  const bookResult = await getBookById(bookIdStr);
+
+  if (!bookResult.success || !bookResult.data) {
+    return {
+      authorized: false,
+      response: NextResponse.json({ error: 'Book not found' }, { status: 404 }),
+    };
+  }
+
+  if (bookResult.data.clerkId !== userId) {
+    return {
+      authorized: false,
+      response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }),
+    };
+  }
+
+  return { authorized: true };
+}
+
 export async function GET() {
   return NextResponse.json({ status: 'ok' });
 }
@@ -62,6 +114,11 @@ export async function POST(request: Request) {
       const parsed = parseArgs(parameters);
 
       if (name === 'searchBook') {
+        const authCheck = await authorizeBookAccess(parsed.bookId);
+        if (!authCheck.authorized) {
+          return authCheck.response;
+        }
+
         const result = await processBookSearch(parsed.bookId, parsed.query);
         return NextResponse.json(result);
       }
@@ -84,6 +141,12 @@ export async function POST(request: Request) {
       const args = parseArgs(func?.arguments);
 
       if (name === 'searchBook') {
+        const authCheck = await authorizeBookAccess(args.bookId);
+        if (!authCheck.authorized) {
+          // Return the error response directly so the caller sees it immediately
+          return authCheck.response;
+        }
+
         const searchResult = await processBookSearch(args.bookId, args.query);
         results.push({ toolCallId: id, ...searchResult });
       } else {

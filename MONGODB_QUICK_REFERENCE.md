@@ -3,7 +3,7 @@
 ## Your Problem
 ```
 Error: Could not connect to any servers in your MongoDB Atlas cluster
-Your IP: 172.56.164.242 is NOT whitelisted
+Your IP: <REDACTED_IP> is NOT whitelisted
 ```
 
 ---

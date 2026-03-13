@@ -4,7 +4,7 @@
 - ✅ DNS resolution: Working
 - ✅ Internet connectivity: Working  
 - ✅ MongoDB Atlas cluster: Active
-- ❌ IP Whitelist: Your IP (172.56.164.242) is NOT whitelisted
+- ❌ IP Whitelist: Your IP (<REDACTED_IP>) is NOT whitelisted
 
 ---
 
@@ -90,7 +90,7 @@ When deploying to Vercel:
 ✅ DNS works (cluster0.hljmdgt.mongodb.net resolves)
 ✅ MongoDB Atlas is running (status shows all systems operational)
 ✅ Your credentials are correct
-❌ Your IP (172.56.164.242) is not whitelisted = connection blocked
+❌ Your IP (<REDACTED_IP>) is not whitelisted = connection blocked
 
 **This is a security feature. IP whitelisting prevents unauthorized database access.**
 

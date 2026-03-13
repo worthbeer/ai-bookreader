@@ -47,6 +47,30 @@ function getStorageClient() {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 
+/**
+ * Fetch a single book by its MongoDB ObjectId string.
+ * Returns the full book record (including clerkId) so callers can verify ownership.
+ */
+export const getBookById = async (bookId: string) => {
+    try {
+        await connectToDatabase();
+
+        if (!Types.ObjectId.isValid(bookId)) {
+            return { success: false, error: { message: 'Invalid book ID.' } };
+        }
+
+        const book = await Book.findById(bookId).lean();
+        if (!book) {
+            return { success: false, error: { message: 'Book not found.' } };
+        }
+
+        return { success: true, data: serializeData(book) };
+    } catch (e) {
+        console.error('Error fetching book by id:', e);
+        return { success: false, error: serializeError(e) };
+    }
+};
+
 export const getAllBooks = async () => {
     try {
         await connectToDatabase();
