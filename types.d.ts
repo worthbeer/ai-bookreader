@@ -10,7 +10,7 @@ import { UploadSchema } from '@/lib/zod';
 // ============================================
 
 export interface IBook extends Document {
-    _id: Types.ObjectId;
+    _id: string;
     clerkId: string;
     title: string;
     slug: string;
@@ -38,7 +38,7 @@ export interface IBookSegment extends Document {
 }
 
 export interface IVoiceSession extends Document {
-    _id: Types.ObjectId;
+    _id: string;
     clerkId: string;
     bookId: Types.ObjectId;
     startedAt: Date;
@@ -115,4 +115,27 @@ export interface FileUploadFieldProps<T extends FieldValues> {
     icon: LucideIcon;
     placeholder: string;
     hint: string;
+}
+import {PLANS, PlanType} from "@/lib/subscription-constants";
+
+export interface SessionCheckResult {
+    allowed: boolean;
+    currentCount: number;
+    limit: number;
+    plan: PlanType;
+    maxDurationMinutes: number;
+    error?: string;
+}
+
+export interface StartSessionResult {
+    success: boolean;
+    sessionId?: string;
+    maxDurationMinutes?: number;
+    error?: string;
+    isBillingError?: boolean;
+}
+
+export interface EndSessionResult {
+    success: boolean;
+    error?: string;
 }
