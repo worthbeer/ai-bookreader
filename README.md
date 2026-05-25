@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# AI Book Reader
 
-## Getting Started
+Upload PDF books, browse your library, and interact with them through voice AI. Built to explore Next.js 16 with React 19, VAPI for voice interfaces, and Clerk + MongoDB as a production-grade auth and persistence stack.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## What It Does
+
+- **Upload PDFs** — drag-and-drop upload with react-hook-form validation and Zod schema enforcement; files stored in Vercel Blob
+- **Book library** — all uploaded books displayed as cards with cover image, title, and author, persisted in MongoDB
+- **Voice interaction** — VAPI Web SDK powers a voice AI session on each book page; ask questions, get summaries, navigate by voice
+- **Auth** — Clerk handles sign-up, sign-in, and session management; protected routes enforce authentication before any book or upload access
+
+---
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 16 App Router |
+| Runtime | React 19 |
+| Language | TypeScript 5 (strict) |
+| Styling | Tailwind CSS 4 + shadcn/ui |
+| Auth | Clerk |
+| Database | MongoDB + Mongoose |
+| File Storage | Vercel Blob |
+| Voice AI | VAPI Web SDK |
+| PDF Parsing | PDF.js (pdfjs-dist) |
+| Forms | React Hook Form + Zod |
+| Notifications | Sonner |
+
+---
+
+## Architecture Notes
+
+**Why VAPI** — VAPI manages the full voice session lifecycle: wake word, transcription, LLM call, and TTS response. The alternative was wiring together Whisper + an LLM + a TTS API manually; VAPI trades control for speed of integration.
+
+**Why Clerk over NextAuth** — Clerk provides pre-built UI components (sign-in, sign-up, user button) and handles session tokens, JWTs, and middleware in a single package. For a project focused on the AI and voice layers, not the auth layer, that tradeoff is correct.
+
+**Why Vercel Blob over S3** — Zero configuration for a Next.js/Vercel deployment. The tradeoff: less control over storage lifecycle and no multi-cloud portability.
+
+**MongoDB over a relational DB** — Book metadata (title, author, slug, coverURL, segments) is document-shaped with no relational dependencies that would benefit from joins. Mongoose adds schema validation on top.
+
+---
+
+## Running Locally
+
+Create a `.env.local` file in the project root:
+
+```
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+NEXT_PUBLIC_CLERK_SIGN_IN_URL=/sign-in
+NEXT_PUBLIC_CLERK_SIGN_UP_URL=/sign-up
+
+MONGODB_URI=
+
+BLOB_READ_WRITE_TOKEN=
+
+NEXT_PUBLIC_VAPI_WEB_TOKEN=
+VAPI_PRIVATE_KEY=
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+```bash
+npm install
+npm run dev
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+App runs at `http://localhost:3000`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## Skills Demonstrated
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Voice AI integration with VAPI — session lifecycle, controls, transcript rendering
+- Clerk auth with protected routes and middleware in Next.js App Router
+- MongoDB + Mongoose for document persistence with typed models
+- File upload pipeline: client validation → server route → Vercel Blob → MongoDB reference
+- Next.js 16 / React 19 bleeding-edge features in a working app
